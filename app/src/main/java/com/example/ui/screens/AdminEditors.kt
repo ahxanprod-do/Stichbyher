@@ -30,6 +30,7 @@ import androidx.compose.material.icons.rounded.AddPhotoAlternate
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -41,6 +42,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -63,6 +65,7 @@ import com.example.ui.components.BoutiqueImage
 import com.example.ui.components.encodeUriToCompressedDataUri
 import com.example.ui.theme.BlushPink
 import com.example.ui.theme.CreamBackground
+import com.example.ui.theme.CrimsonError
 import com.example.ui.theme.DeepRose
 import com.example.ui.theme.HairlineRose
 import com.example.ui.theme.MutedTaupe
@@ -83,7 +86,7 @@ fun ProductEditorDialog(
     initial: Product?,
     categories: List<Category>,
     onDismiss: () -> Unit,
-    onSave: (Product) -> Unit
+    onSave: (Product, (Result<String>) -> Unit) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -93,6 +96,11 @@ fun ProductEditorDialog(
         mutableStateOf(
             categories.find { it.id == initial?.categoryId } ?: categories.firstOrNull()
         )
+    }
+    LaunchedEffect(categories) {
+        if (selectedCategory == null && categories.isNotEmpty()) {
+            selectedCategory = categories.find { it.id == initial?.categoryId } ?: categories.firstOrNull()
+        }
     }
     var priceText by remember { mutableStateOf(initial?.price?.takeIf { it > 0 }?.toInt()?.toString().orEmpty()) }
     var originalPriceText by remember { mutableStateOf(initial?.originalPrice?.takeIf { it > 0 }?.toInt()?.toString().orEmpty()) }
@@ -115,15 +123,28 @@ fun ProductEditorDialog(
     var isTrending by remember { mutableStateOf(initial?.isTrending ?: false) }
     var isSpecialCollection by remember { mutableStateOf(initial?.isSpecialCollection ?: false) }
     var isPublished by remember { mutableStateOf(initial?.isPublished ?: true) }
+    var isProcessingImages by remember { mutableStateOf(false) }
+    var isSaving by remember { mutableStateOf(false) }
+    var errorText by remember { mutableStateOf<String?>(null) }
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 5)
     ) { uris ->
-        scope.launch {
-            uris.forEach { uri ->
-                if (imageUrls.size < 8) {
-                    val dataUri = encodeUriToCompressedDataUri(context, uri)
-                    if (dataUri != null) imageUrls.add(dataUri)
+        if (uris.isNotEmpty()) {
+            scope.launch {
+                isProcessingImages = true
+                errorText = null
+                try {
+                    uris.forEach { uri ->
+                        if (imageUrls.size < 8) {
+                            val dataUri = encodeUriToCompressedDataUri(context, uri)
+                            if (dataUri != null) {
+                                imageUrls.add(dataUri)
+                            }
+                        }
+                    }
+                } finally {
+                    isProcessingImages = false
                 }
             }
         }
@@ -169,13 +190,21 @@ fun ProductEditorDialog(
                 )
 
                 Text("Category", style = MaterialTheme.typography.labelMedium, color = MutedTaupe)
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    items(categories, key = { it.id }) { cat ->
-                        FilterChip(
-                            selected = selectedCategory?.id == cat.id,
-                            onClick = { selectedCategory = cat },
-                            label = { Text(cat.name) }
-                        )
+                if (categories.isEmpty()) {
+                    Text(
+                        text = "Using default category: Women's Clothing (create custom categories in Categories tab).",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = DeepRose
+                    )
+                } else {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        items(categories, key = { it.id }) { cat ->
+                            FilterChip(
+                                selected = selectedCategory?.id == cat.id,
+                                onClick = { selectedCategory = cat },
+                                label = { Text(cat.name) }
+                            )
+                        }
                     }
                 }
 
@@ -226,18 +255,28 @@ fun ProductEditorDialog(
                     }
                 }
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     OutlinedButton(
                         onClick = {
                             imagePicker.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
                         },
+                        enabled = !isProcessingImages && !isSaving,
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(Icons.Rounded.AddPhotoAlternate, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Pick Photos")
+                        if (isProcessingImages) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Optimizing...")
+                        } else {
+                            Icon(Icons.Rounded.AddPhotoAlternate, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Pick Photos")
+                        }
                     }
                 }
 
@@ -323,46 +362,93 @@ fun ProductEditorDialog(
                 AdminSwitchRow("Trending Collection", isTrending) { isTrending = it }
                 AdminSwitchRow("Special Collection", isSpecialCollection) { isSpecialCollection = it }
 
+                if (!errorText.isNullOrBlank()) {
+                    Surface(
+                        color = CrimsonError.copy(alpha = 0.12f),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = errorText.orEmpty(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = CrimsonError,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                }
+
                 Button(
                     onClick = {
-                        val parsedPrice = priceText.toDoubleOrNull() ?: 0.0
+                        val cleanName = name.trim()
+                        val parsedPrice = priceText.toDoubleOrNull()
+                        if (cleanName.isBlank()) {
+                            errorText = "Please enter a Product Name."
+                            return@Button
+                        }
+                        if (parsedPrice == null || parsedPrice < 0.0) {
+                            errorText = "Please enter a valid Price (₹)."
+                            return@Button
+                        }
                         val parsedOriginal = (originalPriceText.toDoubleOrNull() ?: parsedPrice).coerceAtLeast(parsedPrice)
-                        val parsedStock = stockText.toLongOrNull() ?: 0L
-                        val cat = selectedCategory
-                        if (name.isNotBlank() && cat != null) {
-                            onSave(
-                                (initial ?: Product()).copy(
-                                    name = name.trim(),
-                                    categoryId = cat.id,
-                                    categoryName = cat.name,
-                                    price = parsedPrice,
-                                    originalPrice = parsedOriginal,
-                                    stock = parsedStock,
-                                    description = description.trim(),
-                                    fabricDetails = fabricDetails.trim(),
-                                    specifications = specifications.trim(),
-                                    sizes = sizesText.split(",").map { it.trim() }.filter { it.isNotBlank() },
-                                    colors = colorsText.split(",").map { it.trim() }.filter { it.isNotBlank() },
-                                    highlights = highlightsText.split(",").map { it.trim() }.filter { it.isNotBlank() },
-                                    imageUrls = imageUrls.toList(),
-                                    isFeatured = isFeatured,
-                                    isBestSeller = isBestSeller,
-                                    isNewArrival = isNewArrival,
-                                    isTrending = isTrending,
-                                    isSpecialCollection = isSpecialCollection,
-                                    isPublished = isPublished
-                                )
+                        val parsedStock = stockText.toLongOrNull() ?: 10L
+                        val resolvedCatId = selectedCategory?.id?.takeIf { it.isNotBlank() }
+                            ?: initial?.categoryId?.takeIf { it.isNotBlank() }
+                            ?: "cat_general"
+                        val resolvedCatName = selectedCategory?.name?.takeIf { it.isNotBlank() }
+                            ?: initial?.categoryName?.takeIf { it.isNotBlank() }
+                            ?: "Women's Clothing"
+
+                        errorText = null
+                        isSaving = true
+                        onSave(
+                            (initial ?: Product()).copy(
+                                name = cleanName,
+                                categoryId = resolvedCatId,
+                                categoryName = resolvedCatName,
+                                price = parsedPrice,
+                                originalPrice = parsedOriginal,
+                                stock = parsedStock,
+                                description = description.trim(),
+                                fabricDetails = fabricDetails.trim(),
+                                specifications = specifications.trim(),
+                                sizes = sizesText.split(",").map { it.trim() }.filter { it.isNotBlank() },
+                                colors = colorsText.split(",").map { it.trim() }.filter { it.isNotBlank() },
+                                highlights = highlightsText.split(",").map { it.trim() }.filter { it.isNotBlank() },
+                                imageUrls = imageUrls.toList(),
+                                isFeatured = isFeatured,
+                                isBestSeller = isBestSeller,
+                                isNewArrival = isNewArrival,
+                                isTrending = isTrending,
+                                isSpecialCollection = isSpecialCollection,
+                                isPublished = isPublished
                             )
-                            onDismiss()
+                        ) { result ->
+                            isSaving = false
+                            result.onSuccess {
+                                onDismiss()
+                            }.onFailure { err ->
+                                errorText = err.localizedMessage ?: "Failed to save product. Please verify internet and admin access."
+                            }
                         }
                     },
+                    enabled = !isSaving && !isProcessingImages,
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = ObsidianBlack, contentColor = BlushPink),
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp)
                 ) {
-                    Text("Save Product to Live Store")
+                    if (isSaving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = BlushPink,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text("Saving to Live Store...")
+                    } else {
+                        Text("Save Product to Live Store")
+                    }
                 }
             }
         }
@@ -374,7 +460,7 @@ fun CategoryEditorDialog(
     initial: Category?,
     nextOrder: Long,
     onDismiss: () -> Unit,
-    onSave: (Category) -> Unit
+    onSave: (Category, (Result<String>) -> Unit) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -382,6 +468,8 @@ fun CategoryEditorDialog(
     var description by remember { mutableStateOf(initial?.description.orEmpty()) }
     var imageUrl by remember { mutableStateOf(initial?.imageUrl ?: "preset://dress_collection") }
     var isVisible by remember { mutableStateOf(initial?.isVisible ?: true) }
+    var isSaving by remember { mutableStateOf(false) }
+    var errorText by remember { mutableStateOf<String?>(null) }
 
     val picker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -439,28 +527,43 @@ fun CategoryEditorDialog(
                     modifier = Modifier.fillMaxWidth()
                 )
                 AdminSwitchRow("Visible on Storefront", isVisible) { isVisible = it }
+                if (!errorText.isNullOrBlank()) {
+                    Text(
+                        text = errorText.orEmpty(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = CrimsonError
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End
                 ) {
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    TextButton(onClick = onDismiss, enabled = !isSaving) { Text("Cancel") }
                     Button(
                         onClick = {
-                            if (name.isNotBlank()) {
-                                onSave(
-                                    (initial ?: Category(sortOrder = nextOrder)).copy(
-                                        name = name.trim(),
-                                        description = description.trim(),
-                                        imageUrl = imageUrl.trim().ifBlank { null },
-                                        isVisible = isVisible
-                                    )
+                            if (name.isBlank()) {
+                                errorText = "Please enter a Category Name."
+                                return@Button
+                            }
+                            errorText = null
+                            isSaving = true
+                            onSave(
+                                (initial ?: Category(sortOrder = nextOrder)).copy(
+                                    name = name.trim(),
+                                    description = description.trim(),
+                                    imageUrl = imageUrl.trim().ifBlank { null },
+                                    isVisible = isVisible
                                 )
-                                onDismiss()
+                            ) { result ->
+                                isSaving = false
+                                result.onSuccess { onDismiss() }
+                                    .onFailure { errorText = it.localizedMessage ?: "Failed to save category." }
                             }
                         },
+                        enabled = !isSaving,
                         colors = ButtonDefaults.buttonColors(containerColor = ObsidianBlack)
                     ) {
-                        Text("Save")
+                        Text(if (isSaving) "Saving..." else "Save")
                     }
                 }
             }

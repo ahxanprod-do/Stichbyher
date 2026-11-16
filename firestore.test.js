@@ -155,6 +155,13 @@ test("Verified bootstrapped admin: can manage categories, products, announcement
     adminDb.collection("products").doc("prod_1").set(sampleProductPayload(ts))
   );
 
+  await assertSucceeds(
+    adminDb.collection("products").doc("prod_1").update({
+      price: 4499,
+      updatedAt: pastTimestamp(),
+    })
+  );
+
   // Ghost field shadow write fails
   await assertFails(
     adminDb.collection("announcements").doc("ann_1").set({

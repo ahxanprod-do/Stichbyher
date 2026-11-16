@@ -17,14 +17,15 @@ class StitchByHerRepositoryRuleTest : FirestoreEmulatorTestBase() {
 
     @Test
     fun userProfile_authenticatedOwner_createsAndUpdatesProfile() = runBlocking {
-        val uid = signInTestUser(ALICE_EMAIL)
+        val aliceEmail = "alice_${java.util.UUID.randomUUID().toString().take(6)}@test.com"
+        val uid = signInTestUser(aliceEmail)
         val repository = StitchByHerRepository(firestore, auth)
 
         val profile = withTimeout(DEFAULT_TIMEOUT_MS) {
             repository.ensureUserProfile(
                 userId = uid,
                 displayName = "Alice Boutique",
-                email = ALICE_EMAIL,
+                email = aliceEmail,
                 photoUrl = null
             ).getOrThrow()
         }
@@ -44,7 +45,9 @@ class StitchByHerRepositoryRuleTest : FirestoreEmulatorTestBase() {
 
     @Test
     fun wishlist_authenticatedUser_togglesAndIsolates() = runBlocking {
-        val aliceUid = signInTestUser(ALICE_EMAIL)
+        val aliceEmail = "alice_w_${java.util.UUID.randomUUID().toString().take(6)}@test.com"
+        val bobEmail = "bob_w_${java.util.UUID.randomUUID().toString().take(6)}@test.com"
+        val aliceUid = signInTestUser(aliceEmail)
         val aliceRepo = StitchByHerRepository(firestore, auth)
         val sampleProduct = Product(
             id = "prod_test_wishlist",
@@ -63,7 +66,7 @@ class StitchByHerRepositoryRuleTest : FirestoreEmulatorTestBase() {
         assertTrue(items.any { it.productId == "prod_test_wishlist" })
 
         // Cross-user read attempt fails with PERMISSION_DENIED
-        signInTestUser(BOB_EMAIL)
+        signInTestUser(bobEmail)
         try {
             withTimeout(DEFAULT_TIMEOUT_MS) {
                 firestore.collection("users").document(aliceUid).collection("wishlist").get().await()
@@ -93,7 +96,8 @@ class StitchByHerRepositoryRuleTest : FirestoreEmulatorTestBase() {
 
     @Test
     fun products_nonAdminWrite_failsWithPermissionDenied() = runBlocking {
-        signInTestUser(ALICE_EMAIL)
+        val aliceEmail = "alice_na_${java.util.UUID.randomUUID().toString().take(6)}@test.com"
+        signInTestUser(aliceEmail)
         val repository = StitchByHerRepository(firestore, auth)
 
         val result = withTimeout(DEFAULT_TIMEOUT_MS) {
@@ -113,8 +117,6 @@ class StitchByHerRepositoryRuleTest : FirestoreEmulatorTestBase() {
     }
 
     private companion object {
-        const val ALICE_EMAIL = "alice_boutique@test.com"
-        const val BOB_EMAIL = "bob_boutique@test.com"
         const val DEFAULT_TIMEOUT_MS = 5000L
         const val FLOW_TIMEOUT_MS = 3000L
     }

@@ -371,11 +371,13 @@ class StitchByHerViewModel(
         }
     }
 
-    fun saveProduct(product: Product) {
+    fun saveProduct(product: Product, onResult: (Result<String>) -> Unit = {}) {
         viewModelScope.launch {
-            repository.saveProduct(product)
+            val result = repository.saveProduct(product)
+            result
                 .onSuccess { _toastMessage.tryEmit("Product saved") }
                 .onFailure { _toastMessage.tryEmit(it.localizedMessage ?: "Failed to save product") }
+            onResult(result)
         }
     }
 
@@ -387,11 +389,13 @@ class StitchByHerViewModel(
         }
     }
 
-    fun saveCategory(category: Category) {
+    fun saveCategory(category: Category, onResult: (Result<String>) -> Unit = {}) {
         viewModelScope.launch {
-            repository.saveCategory(category)
+            val result = repository.saveCategory(category)
+            result
                 .onSuccess { _toastMessage.tryEmit("Category saved") }
                 .onFailure { _toastMessage.tryEmit(it.localizedMessage ?: "Failed to save category") }
+            onResult(result)
         }
     }
 

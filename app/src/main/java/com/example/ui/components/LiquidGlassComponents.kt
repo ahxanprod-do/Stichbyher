@@ -236,7 +236,7 @@ suspend fun encodeUriToCompressedDataUri(context: Context, uri: Uri): String? = 
     try {
         context.contentResolver.openInputStream(uri)?.use { stream ->
             val original = BitmapFactory.decodeStream(stream) ?: return@withContext null
-            val maxDim = 640
+            val maxDim = 480
             val scale = minOf(maxDim.toFloat() / original.width, maxDim.toFloat() / original.height, 1f)
             val targetW = (original.width * scale).toInt().coerceAtLeast(1)
             val targetH = (original.height * scale).toInt().coerceAtLeast(1)
@@ -245,9 +245,15 @@ suspend fun encodeUriToCompressedDataUri(context: Context, uri: Uri): String? = 
             } else {
                 original
             }
-            val out = ByteArrayOutputStream()
-            resized.compress(Bitmap.CompressFormat.JPEG, 76, out)
-            val base64 = Base64.encodeToString(out.toByteArray(), Base64.NO_WRAP)
+            val qualities = intArrayOf(72, 58, 45, 32)
+            var bestBytes: ByteArray = byteArrayOf()
+            for (q in qualities) {
+                val out = ByteArrayOutputStream()
+                resized.compress(Bitmap.CompressFormat.JPEG, q, out)
+                bestBytes = out.toByteArray()
+                if (bestBytes.size <= 78_000) break
+            }
+            val base64 = Base64.encodeToString(bestBytes, Base64.NO_WRAP)
             "data:image/jpeg;base64,$base64"
         }
     } catch (_: Exception) {

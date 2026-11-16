@@ -109,9 +109,9 @@ fun AdminDashboardScreen(
     settings: WebsiteSettings,
     onBack: () -> Unit,
     onSeedStorefront: () -> Unit,
-    onSaveProduct: (Product) -> Unit,
+    onSaveProduct: (Product, (Result<String>) -> Unit) -> Unit,
     onDeleteProduct: (String) -> Unit,
-    onSaveCategory: (Category) -> Unit,
+    onSaveCategory: (Category, (Result<String>) -> Unit) -> Unit,
     onSwapCategoryOrder: (Category, Category) -> Unit,
     onDeleteCategory: (String) -> Unit,
     onUpdateOrder: (orderId: String, status: String, channel: String, notes: String) -> Unit,
@@ -339,12 +339,34 @@ fun AdminDashboardScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     item {
-                        OutlinedTextField(
-                            value = productSearch,
-                            onValueChange = { productSearch = it },
-                            label = { Text("Search products") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedTextField(
+                                value = productSearch,
+                                onValueChange = { productSearch = it },
+                                label = { Text("Search products") },
+                                modifier = Modifier.weight(1f)
+                            )
+                            Button(
+                                onClick = {
+                                    editingProduct = null
+                                    showProductDialog = true
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = ObsidianBlack,
+                                    contentColor = BlushPink
+                                ),
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier.height(54.dp)
+                            ) {
+                                Icon(Icons.Rounded.Add, contentDescription = "Add product", modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("Add")
+                            }
+                        }
                     }
                     items(shownProducts, key = { it.id }) { product ->
                         LiquidGlassCard(cornerRadius = 18.dp, alpha = 0.86f) {

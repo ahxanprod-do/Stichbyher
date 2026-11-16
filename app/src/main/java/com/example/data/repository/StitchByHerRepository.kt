@@ -377,7 +377,16 @@ class StitchByHerRepository(
         val discount = if (product.originalPrice > product.price && product.originalPrice > 0.0) {
             (((product.originalPrice - product.price) / product.originalPrice) * 100).toLong().coerceIn(0L, 99L)
         } else {
-            product.discountPercent.coerceIn(0L, 99L)
+            0L
+        }
+        val cleanImages = mutableListOf<String>()
+        var totalImageChars = 0
+        for (rawUrl in product.imageUrls.take(8)) {
+            val trimmed = rawUrl.trim()
+            if (trimmed.isNotBlank() && trimmed.length <= 480_000 && totalImageChars + trimmed.length <= 750_000) {
+                cleanImages.add(trimmed)
+                totalImageChars += trimmed.length
+            }
         }
         val payload = mutableMapOf<String, Any>(
             "name" to product.name.trim().ifBlank { "Boutique Creation" }.take(160),
@@ -392,7 +401,7 @@ class StitchByHerRepository(
             "highlights" to product.highlights.map { it.trim().take(300) }.filter { it.isNotBlank() }.take(15),
             "sizes" to product.sizes.map { it.trim().take(40) }.filter { it.isNotBlank() }.take(15),
             "colors" to product.colors.map { it.trim().take(40) }.filter { it.isNotBlank() }.take(15),
-            "imageUrls" to product.imageUrls.map { it.trim().take(500000) }.filter { it.isNotBlank() }.take(8),
+            "imageUrls" to cleanImages,
             "stock" to product.stock.coerceIn(0L, 100000L),
             "isFeatured" to product.isFeatured,
             "isBestSeller" to product.isBestSeller,
