@@ -1,0 +1,242 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Private customer profile, contact phone, and saved delivery addresses.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID of the customer." },
+        "fullName": { "type": "string", "description": "Customer full name." },
+        "email": { "type": "string", "description": "Customer email address." },
+        "phoneNumber": { "type": "string", "description": "Customer contact phone number for WhatsApp orders." },
+        "photoUrl": { "type": "string", "description": "Optional avatar URL or data URI." },
+        "savedAddresses": { "type": "array", "description": "Bounded list of up to 10 saved delivery addresses." },
+        "defaultAddress": { "type": "string", "description": "Primary selected delivery address." },
+        "isBlocked": { "type": "boolean", "description": "Admin-managed account access restriction flag." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp via FieldValue.serverTimestamp()." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp via FieldValue.serverTimestamp()." }
+      },
+      "required": ["userId", "fullName", "email", "phoneNumber", "savedAddresses", "defaultAddress", "isBlocked", "createdAt", "updatedAt"]
+    },
+    "WishlistItem": {
+      "title": "WishlistItem",
+      "description": "Saved wishlist product under a customer's user document.",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "price": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "productName", "price", "createdAt"]
+    },
+    "AdminRole": {
+      "title": "AdminRole",
+      "description": "Authorized store administrator registry.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "addedBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "addedBy", "createdAt"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Dynamic storefront product category.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "sortOrder": { "type": "integer" },
+        "isVisible": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "description", "sortOrder", "isVisible", "createdAt", "updatedAt"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "Fashion boutique product listing.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "categoryName": { "type": "string" },
+        "price": { "type": "number" },
+        "originalPrice": { "type": "number" },
+        "discountPercent": { "type": "integer" },
+        "description": { "type": "string" },
+        "fabricDetails": { "type": "string" },
+        "specifications": { "type": "string" },
+        "highlights": { "type": "array" },
+        "sizes": { "type": "array" },
+        "colors": { "type": "array" },
+        "imageUrls": { "type": "array" },
+        "stock": { "type": "integer" },
+        "isFeatured": { "type": "boolean" },
+        "isBestSeller": { "type": "boolean" },
+        "isNewArrival": { "type": "boolean" },
+        "isTrending": { "type": "boolean" },
+        "isSpecialCollection": { "type": "boolean" },
+        "isPublished": { "type": "boolean" },
+        "ratingAvg": { "type": "number" },
+        "reviewCount": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "categoryId", "categoryName", "price", "originalPrice", "discountPercent", "description", "fabricDetails", "specifications", "highlights", "sizes", "colors", "imageUrls", "stock", "isFeatured", "isBestSeller", "isNewArrival", "isTrending", "isSpecialCollection", "isPublished", "ratingAvg", "reviewCount", "createdAt", "updatedAt"]
+    },
+    "OrderEnquiry": {
+      "title": "OrderEnquiry",
+      "description": "Customer WhatsApp order enquiry and fulfillment tracking record.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "deliveryAddress": { "type": "string" },
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "productImageUrl": { "type": "string" },
+        "selectedSize": { "type": "string" },
+        "selectedColor": { "type": "string" },
+        "quantity": { "type": "integer" },
+        "unitPrice": { "type": "number" },
+        "totalPrice": { "type": "number" },
+        "status": { "type": "string", "enum": ["Pending", "Confirmed", "Processing", "Shipped", "Delivered", "Cancelled"] },
+        "channel": { "type": "string", "enum": ["WhatsApp Enquiry", "Confirmed Order"] },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "customerName", "customerPhone", "deliveryAddress", "productId", "productName", "selectedSize", "selectedColor", "quantity", "unitPrice", "totalPrice", "status", "channel", "notes", "createdAt", "updatedAt"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Liquid Glass boutique announcement banner item.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "badgeText": { "type": "string" },
+        "sortOrder": { "type": "integer" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "message", "badgeText", "sortOrder", "isActive", "createdAt", "updatedAt"]
+    },
+    "Banner": {
+      "title": "Banner",
+      "description": "Promotional hero/collection banner.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "ctaText": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "targetCategoryId": { "type": "string" },
+        "sortOrder": { "type": "integer" },
+        "isActive": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "subtitle", "ctaText", "targetCategoryId", "sortOrder", "isActive", "createdAt", "updatedAt"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Customer product review and rating.",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "rating": { "type": "integer" },
+        "comment": { "type": "string" },
+        "isFeaturedOnHome": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "userId", "userName", "rating", "comment", "isFeaturedOnHome", "createdAt", "updatedAt"]
+    },
+    "WebsiteSettings": {
+      "title": "WebsiteSettings",
+      "description": "Global storefront customization and WhatsApp settings controlled by admin.",
+      "type": "object",
+      "properties": {
+        "brandName": { "type": "string" },
+        "tagline": { "type": "string" },
+        "heroTitle": { "type": "string" },
+        "heroSubtitle": { "type": "string" },
+        "heroCtaText": { "type": "string" },
+        "heroImageUrl": { "type": "string" },
+        "whatsappNumber": { "type": "string" },
+        "aboutTitle": { "type": "string" },
+        "aboutDescription": { "type": "string" },
+        "contactEmail": { "type": "string" },
+        "contactPhone": { "type": "string" },
+        "contactAddress": { "type": "string" },
+        "instagramHandle": { "type": "string" },
+        "footerText": { "type": "string" },
+        "shippingPolicy": { "type": "string" },
+        "returnPolicy": { "type": "string" },
+        "primaryColorHex": { "type": "string" },
+        "accentColorHex": { "type": "string" },
+        "sectionOrder": { "type": "array" },
+        "hiddenSections": { "type": "array" },
+        "showAnnouncements": { "type": "boolean" },
+        "showReviews": { "type": "boolean" },
+        "showAbout": { "type": "boolean" },
+        "showContact": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["brandName", "tagline", "heroTitle", "heroSubtitle", "heroCtaText", "whatsappNumber", "aboutTitle", "aboutDescription", "contactEmail", "contactPhone", "contactAddress", "instagramHandle", "footerText", "shippingPolicy", "returnPolicy", "primaryColorHex", "accentColorHex", "sectionOrder", "hiddenSections", "showAnnouncements", "showReviews", "showAbout", "showContact", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private customer profile documents."
+    },
+    "/users/{userId}/wishlist/{productId}": {
+      "schema": { "$ref": "#/entities/WishlistItem" },
+      "description": "User-scoped saved wishlist items."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRole" },
+      "description": "Authorized admin UID registry."
+    },
+    "/categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/Category" },
+      "description": "Storefront product categories."
+    },
+    "/products/{productId}": {
+      "schema": { "$ref": "#/entities/Product" },
+      "description": "Storefront fashion catalogue."
+    },
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/OrderEnquiry" },
+      "description": "WhatsApp order enquiries and confirmed order tracking."
+    },
+    "/announcements/{announcementId}": {
+      "schema": { "$ref": "#/entities/Announcement" },
+      "description": "Top-bar Liquid Glass boutique announcements."
+    },
+    "/banners/{bannerId}": {
+      "schema": { "$ref": "#/entities/Banner" },
+      "description": "Promotional boutique banners."
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/Review" },
+      "description": "Customer product reviews and ratings."
+    },
+    "/websiteSettings/{settingId}": {
+      "schema": { "$ref": "#/entities/WebsiteSettings" },
+      "description": "Live store customization document (/websiteSettings/store)."
+    }
+  }
+}

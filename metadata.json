@@ -1,0 +1,6 @@
+{
+  "name": "StitchByHer",
+  "description": "Luxury fashion boutique and custom stitching shopping app with dynamic catalog, wishlist, WhatsApp ordering, and store owner admin studio.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
